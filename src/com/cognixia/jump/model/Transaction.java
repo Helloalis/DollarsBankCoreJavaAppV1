@@ -80,13 +80,13 @@ public class Transaction {
 	@Override
 	public String toString() {
 		if(this.detType().equals("Withdrawal")) {
-			return "Transaction " + time + ": " + transVal + "withdrawn from account" + rootId;
+			return "Transaction " + time + ": " + transVal * -1 + " withdrawn from account " + rootId;
 		}
 		else if(this.detType().equals("Deposit")) {
-			return "Transaction " + time + ": " + transVal + "deposited to account" + rootId;
+			return "Transaction " + time + ": " + transVal + " deposited to account " + rootId;
 		}
 		else {
-			return "Transaction " + time + ": " + transVal + "transferred from account" + rootId + " to account " + dest ;
+			return "Transaction " + time + ": " + Math.abs(transVal) + " transferred from account " + rootId + " to account " + dest ;
 		}
 		
 	}

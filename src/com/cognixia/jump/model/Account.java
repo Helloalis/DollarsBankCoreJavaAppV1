@@ -12,9 +12,10 @@ public class Account {
 	
 	public Account(Integer id, double amount, String password) {
 		super();
+		this.id = id;
 		this.amount = amount;
 		this.password = password;
-		this.trans = new ArrayList<Transaction>(5);
+		this.trans = new ArrayList<Transaction>();
 		
 	}
 	public double getAmount() {
@@ -61,7 +62,7 @@ public class Account {
 				&& Objects.equals(password, other.password);
 	}
 	public void addTransaction(Transaction transaction) {
-		trans.add(1, transaction);
+		trans.add(0, transaction);
 		if(trans.size() > 5) {
 			trans.remove(5);
 		}

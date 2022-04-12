@@ -1,7 +1,9 @@
 package com.cognixia.jump.controller;
 
 import java.util.ArrayList;
+import java.util.Scanner;
 
+import com.cognixia.jump.exceptions.AccountNotFoundException;
 import com.cognixia.jump.exceptions.TransactionException;
 import com.cognixia.jump.model.Account;
 import com.cognixia.jump.model.Transaction;
@@ -20,9 +22,12 @@ public class UserController {
 		this.users = new ArrayList<User>();
 		this.accounts = new ArrayList<Account>();
 		this.trans = new TransactionController();
+		this.add("Admin", "1111 Bank address", "18001231234", "admin", 10000);
 	}
 
-	public boolean authenticate(int id, String password) {
+	public boolean authenticate(int id, String password) throws AccountNotFoundException {
+		this.getUser(id);
+		
 		if(users.get(id).login(id, password) ) {
 			return true;
 		}
@@ -31,7 +36,10 @@ public class UserController {
 		}
 	}
 	
-	public User getUser(int id) {
+	public User getUser(int id) throws AccountNotFoundException {
+		if(accounts.size() < id) {
+			throw new AccountNotFoundException("No account exists with id " + id);
+		}
 		return users.get(id);
 	}
 	public void printUser(int id) {
@@ -49,10 +57,11 @@ public class UserController {
 	}
 	
 
-	public void add(String nam, String add, String num, String pass, Double amou) {
-		idCounter++;
+	public void add(String nam, String add, String num, String pass, double amou) {
+		
 		users.add(new User(idCounter, nam, add, num, pass));
 		accounts.add(new Account(idCounter, amou, pass));
+		idCounter++;
 	}
 	
 	public void deposit(int id, double val) throws TransactionException {
@@ -60,13 +69,17 @@ public class UserController {
 	}
 	
 	public void withdraw(int id, double val) throws TransactionException {
-		accounts.set(id, trans.deposit(accounts.get(id), val));
+		accounts.set(id, trans.withdraw(accounts.get(id), val));
 	}
 	
-	public void transferFunds(int rootId, int destId, double val) throws TransactionException {
-		Account[] updated = trans.fundTransfer(accounts.get(rootId), accounts.get(destId), val);
-		accounts.set(rootId, updated[0]);
-		accounts.set(destId, updated[1]);
+	public void transferFunds(int rootId, int destId, double val) throws TransactionException, AccountNotFoundException {
+			if(rootId == destId) {
+				throw new TransactionException("Cannot transfer funds to self");
+			}
+			Account[] updated = trans.fundTransfer(accounts.get(rootId), accounts.get(destId), val);
+			accounts.set(rootId, updated[0]);
+			accounts.set(destId, updated[1]);
+
 	}
 	
 

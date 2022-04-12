@@ -25,7 +25,8 @@ public class TransactionController {
 		if((acc.getAmount() - val) < 0) {
 			val += 25.00;
 		}
-		acc.setAmount(acc.getAmount() - val);
+		val = val * -1;
+		acc.setAmount(acc.getAmount() + val);
 		acc.addTransaction(new Transaction(LocalDateTime.now(), val, acc.getId(), null));
 		return acc;
 	}
