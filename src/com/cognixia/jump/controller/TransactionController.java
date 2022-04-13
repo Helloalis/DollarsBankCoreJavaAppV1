@@ -2,6 +2,7 @@ package com.cognixia.jump.controller;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 import com.cognixia.jump.exceptions.TransactionException;
 import com.cognixia.jump.model.Account;
@@ -14,10 +15,7 @@ public class TransactionController {
 		if(val <= 0) {
 			throw new TransactionException("Deposit value must be greater than zero");
 		}
-		LocalDateTime datetime = LocalDateTime.now();  
-	    DateTimeFormatter format = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");  
-	    String formatDateTime = datetime.format(format); 
-	    datetime = LocalDateTime.parse(formatDateTime);
+		Date datetime = new Date(); 
 		acc.setAmount(acc.getAmount() + val);
 		acc.addTransaction(new Transaction(datetime, val, acc.getId(), null));
 		return acc;
@@ -31,10 +29,7 @@ public class TransactionController {
 			val += 25.00;
 		}
 		val = val * -1;
-		LocalDateTime datetime = LocalDateTime.now();  
-	    DateTimeFormatter format = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");  
-	    String formatDateTime = datetime.format(format); 
-	    datetime = LocalDateTime.parse(formatDateTime);
+		Date datetime = new Date(); 
 		acc.setAmount(acc.getAmount() + val);
 		acc.addTransaction(new Transaction(datetime, val, acc.getId(), null));
 		return acc;
@@ -45,10 +40,8 @@ public class TransactionController {
 		if(val <= 0) {
 			throw new TransactionException("Transfer value must be greater than zero");
 		}
-		LocalDateTime datetime = LocalDateTime.now();  
-	    DateTimeFormatter format = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");  
-	    String formatDateTime = datetime.format(format); 
-	    datetime = LocalDateTime.parse(formatDateTime);
+		Date datetime = new Date(); 
+
 		dest.setAmount(dest.getAmount() + val);
 		dest.addTransaction(new Transaction(datetime, val, roo.getId(), dest.getId()));
 		if((roo.getAmount() - val) < 0) {

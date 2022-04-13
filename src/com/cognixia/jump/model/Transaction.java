@@ -1,10 +1,10 @@
 package com.cognixia.jump.model;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Objects;
 
 public class Transaction {
-	private LocalDateTime time;
+	private Date time;
 	private double transVal;
 	
 	//denotes the root account and destination account by id of a transaction
@@ -15,7 +15,7 @@ public class Transaction {
 
 	
 	
-	public Transaction(LocalDateTime time, double transVal, Integer rootId, Integer dest) {
+	public Transaction(Date time, double transVal, Integer rootId, Integer dest) {
 		super();
 		this.time = time;
 		this.transVal = transVal;
@@ -64,10 +64,10 @@ public class Transaction {
 	public void setDest(int dest) {
 		this.dest = dest;
 	}
-	public LocalDateTime getTime() {
+	public Date getTime() {
 		return time;
 	}
-	public void setTime(LocalDateTime time) {
+	public void setTime(Date time) {
 		this.time = time;
 	}
 	public double getTransVal() {

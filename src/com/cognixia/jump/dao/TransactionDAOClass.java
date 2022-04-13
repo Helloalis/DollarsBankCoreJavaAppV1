@@ -2,9 +2,13 @@ package com.cognixia.jump.dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -13,161 +17,174 @@ import com.cognixia.jump.model.Transaction;
 public class TransactionDAOClass implements TransactionDAO<Transaction> {
 
 	private Connection conn = null;
-	
+
 	@Override
 	public List<Transaction> getAllTransactions() {
-		
+
 		conn = ConnectionManager.getConnection();
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
-		
+
 		try {
 			pstmt = conn.prepareStatement(
-					"select * from transaction"
+					"select * from transactions"
 					);
+
 			rs = pstmt.executeQuery();
-			
-			List<Transaction> deptList = new ArrayList<>();
-			
+
+			List<Transaction> transList = new ArrayList<>();
+
 			while(rs.next()) {
-				Transaction dept = new Transaction(
-						rs.getInt("dept_id"), 
-						rs.getString("dept_name"), 
-						rs.getString("dept_phone"));
-				
-				deptList.add(dept);
+				Timestamp ts = rs.getTimestamp("timeval");
+				Transaction trans = new Transaction(
+						new Date(ts.getTime()),
+						rs.getDouble("trans_val"),
+						rs.getInt("root_id"),
+						rs.getInt("dest_id"));
+
+
+						transList.add(trans);
 			}
-			
-			return deptList;
-			
+
+			return transList;
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
 			try {
 				rs.close();
 				pstmt.close();
-//				conn.close();
+				//				conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 		return null;
 	}
 
-	
 	@Override
-	public boolean addTransaction(Transaction transaction) {
-		
+	public List<Transaction> getTransactionsByRoot(int id) {
+
 		conn = ConnectionManager.getConnection();
 		PreparedStatement pstmt = null;
-	
-		int query = 0;
-		
+		ResultSet rs = null;
+
 		try {
-			Instant instant = transaction.getTime().atZone(ZoneId.systemDefault()).toInstant();
-			Date date = Date.from(instant);
 			pstmt = conn.prepareStatement(
-					"insert into transactions(date, dept_name, dept_phone) "
-					+ "values(?, ?, ?)"
+					"select * from transactions WHERE root_id = ?"
 					);
-			pstmt.setDate(1, new java.sql.Date(date.getTime()));
-			pstmt.set
-			
-			query = pstmt.executeUpdate();
-			
+			pstmt.setInt(1, id);
+			rs = pstmt.executeQuery();
+
+			List<Transaction> transList = new ArrayList<>();
+
+			while(rs.next()) {
+				Timestamp ts = rs.getTimestamp("timeval");
+				Transaction trans = new Transaction(
+						new Date(ts.getTime()),
+						rs.getDouble("trans_val"),
+						rs.getInt("root_id"),
+						rs.getInt("dest_id"));
+
+
+
+						transList.add(trans);
+			}
+
+			return transList;
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			
+			try {
+				rs.close();
+				pstmt.close();
+				//				conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return null;
+	}
+
+	@Override
+	public boolean addTransaction(Transaction transaction) {
+
+		conn = ConnectionManager.getConnection();
+		PreparedStatement pstmt = null;
+
+		int query = 0;
+
+		try {
+			java.sql.Date sqlDate=new java.sql.Date(transaction.getTime().getTime());
+			pstmt = conn.prepareStatement(
+					"insert into transactions(time_val, trans_val, root_id, dest_id) " + "values(?, ?, ?, ?)");
+			pstmt.setTimestamp(1, new java.sql.Timestamp(sqlDate.getTime()));
+			pstmt.setDouble(2, transaction.getTransVal());
+			pstmt.setInt(3, transaction.getRootId());
+			pstmt.setInt(4, transaction.getDest());
+
+			query = pstmt.executeUpdate();
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+
 			try {
 				pstmt.close();
-//				conn.close();
+				// conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 
 		}
-		if(query > 0) return true;
-		
+		if (query > 0)
+			return true;
+
 		return false;
 	}
 
 	@Override
-	public boolean deleteTransactionById(int id) {
-		conn = ConnectionManager.getConnection();
-		PreparedStatement pstmt = null;
-		boolean retVal = false;
-		
-		try {
-			pstmt = conn.prepareStatement("DELETE * FROM transactions WHERE dept_id = ?");
-			pstmt.setInt(1, id);
-			retVal = pstmt.execute();
-			
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		finally {
-			try {
-				pstmt.close();
-				conn.close();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
-		
-		return retVal;
-	}
-
-	@Override
 	public boolean deleteTransaction(Transaction transaction) {
-		
-		String name = transaction.getName();
-		String phone = transaction.getPhone();
-		int id = -1;
-		
+
 		conn = ConnectionManager.getConnection();
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		boolean success = false;
-		
+
+		java.sql.Date sqlDate=new java.sql.Date(transaction.getTime().getTime());
+		Timestamp dat =  new java.sql.Timestamp(sqlDate.getTime());
 		try {
-			pstmt = conn.prepareStatement(
-					"select * from transaction "
-					+ "where dept_name = ? and dept_phone = ?"
-					);
-			
-			pstmt.setString(1, name);
-			pstmt.setString(2, phone);
-			
+
+			pstmt = conn.prepareStatement("select * from transactions " + "where timeval = ?");
+
+			pstmt.setTimestamp(1, new java.sql.Timestamp(sqlDate.getTime()));
+
 			rs = pstmt.executeQuery();
 			rs.first();
-			id = rs.getInt("dept_id");
-			
-			if (id != -1 ) {
-				pstmt = conn.prepareStatement(
-						"delete from transaction "
-						+ "where dept_id = ?"
-						);
-				pstmt.setInt(1, id);
+			dat = rs.getTimestamp("date");
+
+			if (dat.equals(new java.sql.Timestamp(sqlDate.getTime()))) {
+				pstmt = conn.prepareStatement("delete from transactions " + "where timeval = ?");
+
+				pstmt.setTimestamp(1, new java.sql.Timestamp(sqlDate.getTime()));
 				success = pstmt.execute();
 			}
-			
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
 			try {
 				rs.close();
 				pstmt.close();
-//				conn.close();
+				// conn.close();
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 		return success;
 	}
 
@@ -176,19 +193,22 @@ public class TransactionDAOClass implements TransactionDAO<Transaction> {
 		conn = ConnectionManager.getConnection();
 		PreparedStatement pstmt = null;
 		boolean retVal = false;
-		
+
 		try {
-			pstmt = conn.prepareStatement("UPDATE transaction SET dept_name = ?, dept_phone = ? WHERE dept_id = ?");
-			pstmt.setString(1,transaction.getName());
-			pstmt.setString(2,transaction.getPhone());
-			pstmt.setInt(3, transaction.getId());
-			retVal = pstmt.execute();
-			
+
+			java.sql.Date sqlDate=new java.sql.Date(transaction.getTime().getTime());
+			pstmt = conn.prepareStatement("UPDATE transactions SET trans_val = ?, root_id = ?, dest_id ? WHERE date = ?");
+
+			pstmt.setTimestamp(4, new java.sql.Timestamp(sqlDate.getTime()));
+			pstmt.setDouble(1, transaction.getTransVal());
+			pstmt.setInt(2, transaction.getRootId());
+			pstmt.setInt(3, transaction.getDest());
+
+
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			try {
 				pstmt.close();
 				conn.close();
@@ -196,9 +216,9 @@ public class TransactionDAOClass implements TransactionDAO<Transaction> {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
+
 		}
-		
+
 		return retVal;
 	}
 

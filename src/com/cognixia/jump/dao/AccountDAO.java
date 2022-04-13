@@ -10,7 +10,6 @@ public interface AccountDAO<Account> {
 	boolean addAccount(Account object);
 	
 	boolean deleteAccountById(int id);
-	boolean deleteAccount(Account object);
 	
 	boolean updateAccount(Account object);
 	

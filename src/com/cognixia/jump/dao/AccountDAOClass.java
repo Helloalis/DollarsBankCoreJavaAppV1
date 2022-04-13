@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.cognixia.jump.model.Account;
+import com.cognixia.jump.model.Transaction;
 
 public class AccountDAOClass implements AccountDAO<Account> {
 
@@ -22,25 +23,46 @@ public class AccountDAOClass implements AccountDAO<Account> {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		
+		
 		try {
 			pstmt = conn.prepareStatement(
 					"select * from accounts"
 					);
 			rs = pstmt.executeQuery();
 			
-			List<Account> deptList = new ArrayList<>();
+			
+			
+			
+			ArrayList<Account> accList = new ArrayList<>();
 			
 			while(rs.next()) {
-				Account dept = new Account(
+				ArrayList<Transaction> transList = new ArrayList<>();
+			
+				PreparedStatement psRs = conn.prepareStatement("select * from transactions WHERE root_id = ? ORDER BY timeval DESC"
+						);
+				psRs.setInt(1, rs.getInt("accountId"));
+				ResultSet trs = null;
+				trs = psRs.executeQuery();
+				int i = 0;
+				while(trs.next() && i < 5) {
+					Transaction trans = new Transaction(
+							rs.getDate("date"),
+							rs.getDouble("trans_val"),
+							rs.getInt("root_id"), 
+							rs.getInt("dest"));
+					transList.add(trans);
+					i++;
+				}
+				Account acc = new Account(
 						rs.getInt("accountId"), 
 						rs.getDouble("amount"),
-						rs.getString("password"), 
-						Arrays.asList(rs.getArray("dept_phone")));
+						rs.getString("password"));
+				acc.setTrans(transList);
 				
-				deptList.add(dept);
+				accList.add(acc);
 			}
 			
-			return deptList;
+			return accList;
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -65,10 +87,33 @@ public class AccountDAOClass implements AccountDAO<Account> {
 		Account retVal = null;
 		
 		try {
-			pstmt = conn.prepareStatement("SELECT * FROM accounts WHERE dept_id = ?");
+			pstmt = conn.prepareStatement("SELECT * FROM accounts WHERE accountId = ?");
 			pstmt.setInt(1, id);
 			rs = pstmt.executeQuery();
-			retVal = new Account(rs.getInt(1), rs.getString(2), rs.getString(3));
+			
+			ArrayList<Transaction> transList = new ArrayList<>();
+			
+			PreparedStatement psRs = conn.prepareStatement("select * from transactions WHERE root_id = ? ORDER BY timeval DESC"
+					);
+			psRs.setInt(1, rs.getInt("accountId"));
+			ResultSet trs = null;
+			trs = psRs.executeQuery();
+			int i = 0;
+			while(trs.next() && i < 5) {
+				Transaction trans = new Transaction(
+						rs.getDate("date"),
+						rs.getDouble("trans_val"),
+						rs.getInt("root_id"), 
+						rs.getInt("dest"));
+				transList.add(trans);
+				i++;
+			}
+			
+			Account acc = new Account(
+					rs.getInt("accountId"), 
+					rs.getDouble("amount"),
+					rs.getString("password"));
+			acc.setTrans(transList);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -99,14 +144,29 @@ public class AccountDAOClass implements AccountDAO<Account> {
 		
 		try {
 			pstmt = conn.prepareStatement(
-					"insert into accounts(dept_id, dept_name, dept_phone) "
+					"insert into accounts(accountid, amount, password) "
 					+ "values(?, ?, ?)"
 					);
 			pstmt.setInt(1, 0);
-			pstmt.setString(2, account.getName());
-			pstmt.setString(3, account.getPhone());
-			
+			pstmt.setDouble(2, account.getAmount());
+			pstmt.setString(3, account.getPassword());
 			query = pstmt.executeUpdate();
+			
+			ArrayList<Transaction> trans = account.getTrans();
+			
+			for(int i = 0; i < trans.size(); i ++) {
+				Transaction transaction = trans.get(i);
+				java.sql.Date sqlDate=new java.sql.Date(transaction.getTime().getTime());
+				pstmt = conn.prepareStatement(
+						"insert into transactions(time_val, trans_val, root_id, dest_id) " + "values(?, ?, ?, ?)");
+				pstmt.setTimestamp(1, new java.sql.Timestamp(sqlDate.getTime()));
+				pstmt.setDouble(2, transaction.getTransVal());
+				pstmt.setInt(3, transaction.getRootId());
+				pstmt.setInt(4, transaction.getDest());
+
+				query = pstmt.executeUpdate();
+			}
+
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -132,7 +192,7 @@ public class AccountDAOClass implements AccountDAO<Account> {
 		boolean retVal = false;
 		
 		try {
-			pstmt = conn.prepareStatement("DELETE * FROM accounts WHERE dept_id = ?");
+			pstmt = conn.prepareStatement("DELETE * FROM accounts WHERE accountId = ?");
 			pstmt.setInt(1, id);
 			retVal = pstmt.execute();
 			
@@ -152,55 +212,6 @@ public class AccountDAOClass implements AccountDAO<Account> {
 		}
 		
 		return retVal;
-	}
-
-	@Override
-	public boolean deleteAccount(Account account) {
-		
-		String name = account.getName();
-		String phone = account.getPhone();
-		int id = -1;
-		
-		conn = ConnectionManager.getConnection();
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		boolean success = false;
-		
-		try {
-			pstmt = conn.prepareStatement(
-					"select * from accounts "
-					+ "where dept_name = ? and dept_phone = ?"
-					);
-			
-			pstmt.setString(1, name);
-			pstmt.setString(2, phone);
-			
-			rs = pstmt.executeQuery();
-			rs.first();
-			id = rs.getInt("dept_id");
-			
-			if (id != -1 ) {
-				pstmt = conn.prepareStatement(
-						"delete from accounts "
-						+ "where dept_id = ?"
-						);
-				pstmt.setInt(1, id);
-				success = pstmt.execute();
-			}
-			
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				rs.close();
-				pstmt.close();
-//				conn.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		return success;
 	}
 
 	@Override
